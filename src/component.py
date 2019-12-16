@@ -86,7 +86,6 @@ class Component(KBCEnvHandler):
 
         # store manifest
         for t in res_tables:
-            manifest = {}
             self.configuration.write_table_manifest(os.path.join(self.tables_out_path, t), columns=res_tables[t],
                                                     incremental=True)
         print(res_tables)
