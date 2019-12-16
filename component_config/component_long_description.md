@@ -1,0 +1,1 @@
+Simple MySQL extractor supporting downloading same table structure from multiple schemas at once.
