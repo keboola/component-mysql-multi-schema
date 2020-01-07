@@ -34,7 +34,7 @@ class Client:
 
     def get_table_data(self, table_name, schema, columns=None, row_limit=None, index_column=None, since_index=None):
         cur = self.db.cursor()
-        if columns:
+        if columns and columns != []:
             columns = ','.join(columns)
         else:
             columns = '*'

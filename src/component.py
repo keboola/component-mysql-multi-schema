@@ -31,7 +31,7 @@ KEY_DEBUG = 'debug'
 MANDATORY_PARS = [KEY_USER, KEY_PASSWORD, KEY_HOST, KEY_PORT, KEY_TABLES, [KEY_SCHEMA_PATTERN, KEY_SCHEMA_LIST]]
 MANDATORY_IMAGE_PARS = []
 
-APP_VERSION = '0.0.1'
+APP_VERSION = '0.0.2'
 
 
 class Component(KBCEnvHandler):
@@ -102,6 +102,8 @@ class Component(KBCEnvHandler):
             last_index = None
             if params.get(KEY_INCREMENTAL_FETCH):
                 last_index = self.last_state.get('.'.join([schema, name]))
+
+            logging.info(f"Downloading table {name} from schema {schema}.")
 
             data, col_names, last_id = cl.get_table_data(name, schema, columns, params.get(KEY_ROW_LIMIT), pkey,
                                                          last_index)
