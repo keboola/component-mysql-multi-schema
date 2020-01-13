@@ -1,3 +1,5 @@
+import logging
+
 import pymysql
 import regex
 
@@ -58,6 +60,7 @@ class Client:
         col_names = []
         last_id = None
         try:
+            logging.debug(f'Executing query: {sql}')
             cur.execute(sql)
             rows = cur.fetchall()
             if rows:
