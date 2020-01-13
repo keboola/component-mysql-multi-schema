@@ -2,6 +2,7 @@ import logging
 
 import pymysql
 import regex
+import time
 
 
 class ClientError(Exception):
@@ -64,7 +65,10 @@ class Client:
         col_names = []
         last_id = None
         try:
-            logging.debug(f'Executing query: {sql}')
+            if logging.DEBUG == logging.root.level:
+                # wait before each message
+                time.sleep(1)
+                logging.debug(f'Executing query: {sql}')
             cur.execute(sql)
             rows = cur.fetchall()
             if rows:
