@@ -122,7 +122,7 @@ class Component(KBCEnvHandler):
                 # append schema col
                 col_names.append('schema_nm')
                 self.store_table_data(data, name, schema)
-                downloaded_tables[name] = {'columns': col_names, 'pk': [pkey]}
+                downloaded_tables[name] = {'columns': col_names, 'pk': [pkey, 'schema_nm']}
                 downloaded_tables_indexes['.'.join([schema, name])] = last_id
         return downloaded_tables, downloaded_tables_indexes
 
