@@ -2,6 +2,12 @@ import pymysql
 import regex
 
 
+class ClientError(Exception):
+    """
+
+    """
+
+
 class Client:
 
     def __init__(self, host, port, user, password):
@@ -23,9 +29,10 @@ class Client:
         try:
             cur.execute(sql)
             rows = cur.fetchall()
-
-        finally:
+        except Exception as e:
             self.db.close()
+            raise ClientError(f'Failed to retrieve schemas! {e}')
+
         return rows
 
     def get_schemas_by_pattern(self, pattern):
@@ -57,9 +64,9 @@ class Client:
                 for i in cur.description:
                     col_names.append(i[0])
                 last_id = self._get_last_id(rows, col_names, index_column)
-
-        finally:
+        except Exception as e:
             self.db.close()
+            raise ClientError(f'Failed to execute query {sql}! {e}')
 
         return rows, col_names, last_id
 

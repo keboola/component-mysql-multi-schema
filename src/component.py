@@ -88,8 +88,8 @@ class Component(KBCEnvHandler):
         for t in res_tables:
             self.configuration.write_table_manifest(os.path.join(self.tables_out_path, t), columns=res_tables[t],
                                                     incremental=True)
-        print(res_tables)
-        print(last_indexes)
+        logging.debug(res_tables)
+        logging.info(last_indexes)
 
     def download_tables(self, schema, params):
         cl = Client(params[KEY_HOST], params[KEY_PORT], params[KEY_USER], params[KEY_PASSWORD])
