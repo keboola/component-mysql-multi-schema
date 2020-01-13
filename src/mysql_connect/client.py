@@ -41,7 +41,8 @@ class Client:
         schemas = self.get_available_schemas()
         return [s[0] for s in schemas if regex.search(pattern, s[0])]
 
-    def get_table_data(self, table_name, schema, columns=None, row_limit=None, index_column=None, since_index=None):
+    def get_table_data(self, table_name, schema, columns=None, row_limit=None, since_index=None,
+                       sort_key_col=None, sort_key_type=None):
         cur = self.db.cursor()
         if columns and columns != []:
             columns = ','.join(columns)
@@ -49,10 +50,13 @@ class Client:
             columns = '*'
 
         sql = f'SELECT {columns} FROM {schema}.{table_name}'
-        if index_column and since_index:
-            sql += f' WHERE {index_column} >= {since_index} ORDER BY {index_column}'
-        elif index_column:
-            sql += f' ORDER BY {index_column}'
+
+        if sort_key_col and since_index:
+            if sort_key_type == 'string':
+                since_index = f"'{since_index}'"
+            sql += f' WHERE {sort_key_col} >= {since_index} ORDER BY {sort_key_col}'
+        elif sort_key_col:
+            sql += f' ORDER BY {sort_key_col}'
 
         if row_limit:
             sql += f' LIMIT {row_limit}'
@@ -66,12 +70,12 @@ class Client:
             if rows:
                 for i in cur.description:
                     col_names.append(i[0])
-                last_id = self._get_last_id(rows, col_names, index_column)
+                last_id = self._get_last_id(rows, col_names, sort_key_col)
         except Exception as e:
             self.db.close()
             raise ClientError(f'Failed to execute query {sql}! {e}')
 
-        return rows, col_names, last_id
+        return rows, col_names, str(last_id)
 
     def _get_last_id(self, rows, col_names, index_column):
         pk_index = col_names.index(index_column)

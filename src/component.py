@@ -15,6 +15,11 @@ from mysql_connect.client import Client
 # configuration variables
 KEY_ROW_LIMIT = 'row_limit'
 KEY_PKEY = 'pkey'
+# sort key column parameters
+KEY_SORT_KEY = 'sort_key'
+KEY_SORTKEY_TYPE = 'sort_key_type'
+KEY_SORT_KEY_COL = 'col_name'
+
 KEY_COLUMNS = 'columns'
 KEY_NAME = 'name'
 KEY_SCHEMA_PATTERN = 'schema_pattern'
@@ -86,8 +91,9 @@ class Component(KBCEnvHandler):
 
         # store manifest
         for t in res_tables:
-            self.configuration.write_table_manifest(os.path.join(self.tables_out_path, t), columns=res_tables[t],
-                                                    incremental=True)
+            self.configuration.write_table_manifest(os.path.join(self.tables_out_path, t),
+                                                    columns=res_tables[t]['columns'],
+                                                    incremental=True, primary_key=res_tables[t]['pk'])
         logging.debug(res_tables)
         logging.info(last_indexes)
 
@@ -99,20 +105,24 @@ class Component(KBCEnvHandler):
             name = t[KEY_NAME]
             columns = t[KEY_COLUMNS]
             pkey = t.get(KEY_PKEY)
+            # get sort key
+            sort_key = t.get(KEY_SORT_KEY, {KEY_SORTKEY_TYPE: 'numeric', KEY_SORT_KEY_COL: pkey})
             last_index = None
             if params.get(KEY_INCREMENTAL_FETCH):
                 last_index = self.last_state.get('.'.join([schema, name]))
 
             logging.info(f"Downloading table {name} from schema {schema}.")
 
-            data, col_names, last_id = cl.get_table_data(name, schema, columns, params.get(KEY_ROW_LIMIT), pkey,
-                                                         last_index)
+            data, col_names, last_id = cl.get_table_data(name, schema, columns=columns,
+                                                         row_limit=params.get(KEY_ROW_LIMIT), since_index=last_index,
+                                                         sort_key_col=sort_key[KEY_SORT_KEY_COL],
+                                                         sort_key_type=sort_key[KEY_SORTKEY_TYPE])
 
             if data:
                 # append schema col
                 col_names.append('schema_nm')
                 self.store_table_data(data, name, schema)
-                downloaded_tables[name] = col_names
+                downloaded_tables[name] = {'columns': col_names, 'pk': [pkey]}
                 downloaded_tables_indexes['.'.join([schema, name])] = last_id
         return downloaded_tables, downloaded_tables_indexes
 

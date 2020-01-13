@@ -15,11 +15,22 @@ by the index column value.
 - **`tables`** - List of tables that will be downloaded from each schema - must have same structure.
     - `name` - table name
     - `columns` - array of column names, if empty all available columns downloaded
-    - 'pkey' - name of the primary key column to support incremental fetching
+    - `pkey` - name of the primary key column to support incremental fetching
+    - `sort_key` - parameters of a column that should be used for incremental fetching => each new record has larger or equal value 
+     of that key than the previous one. If left empty 'pkey' with type 'numeric' is used
+        - `col_name` - name of the sort column, e.g. "order_date"
+        - `sort_key_type` - type of the sort column: either `string` or `numeric`
     
-    ```"tables": [
-      {"name": "customers",
+```json
+{
+"tables": [
+      {"name": "orders",
       "columns": [],
-      "pkey": "id"}
+      "pkey": "id",
+      "sort_key" : {
+        "col_name": "order_date",
+        "sort_key_type":  "string"
+      }}
     ]
+}
   ```
