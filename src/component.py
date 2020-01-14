@@ -109,13 +109,13 @@ class Component(KBCEnvHandler):
             last_index = None
             row_limit = None
             sort_key = dict()
-
+            if not isinstance(pkey, list):
+                pkey = [pkey]
             if incremental_fetch:
                 row_limit = params.get(KEY_ROW_LIMIT)
                 sort_key = t.get(KEY_SORT_KEY, {KEY_SORTKEY_TYPE: 'numeric', KEY_SORT_KEY_COL: ','.join(pkey)})
                 last_index = self.last_state.get('.'.join([schema, name]))
-            if not isinstance(pkey, list):
-                pkey = [pkey]
+
             # get sort key
             # validate
             if incremental_fetch and len(pkey) > 1 and not t.get(KEY_SORT_KEY):
