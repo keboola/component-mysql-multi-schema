@@ -106,6 +106,14 @@ class Component(KBCEnvHandler):
             name = t[KEY_NAME]
             columns = t[KEY_COLUMNS]
             pkey = t.get(KEY_PKEY)
+            last_index = None
+            row_limit = None
+            sort_key = dict()
+
+            if incremental_fetch:
+                row_limit = params.get(KEY_ROW_LIMIT)
+                sort_key = t.get(KEY_SORT_KEY, {KEY_SORTKEY_TYPE: 'numeric', KEY_SORT_KEY_COL: ','.join(pkey)})
+                last_index = self.last_state.get('.'.join([schema, name]))
             if not isinstance(pkey, list):
                 pkey = [pkey]
             # get sort key
@@ -114,17 +122,13 @@ class Component(KBCEnvHandler):
                 raise Exception(
                     f'Table "{name}" containing a composite pkey is set to incremental fetch '
                     f'but no sort key is specified! ')
-            sort_key = t.get(KEY_SORT_KEY, {KEY_SORTKEY_TYPE: 'numeric', KEY_SORT_KEY_COL: ','.join(pkey)})
-            last_index = None
-            if incremental_fetch:
-                last_index = self.last_state.get('.'.join([schema, name]))
 
             logging.info(f"Downloading table '{name}' from schema '{schema}''.")
 
             data, col_names, last_id = cl.get_table_data(name, schema, columns=columns,
-                                                         row_limit=params.get(KEY_ROW_LIMIT), since_index=last_index,
-                                                         sort_key_col=sort_key[KEY_SORT_KEY_COL],
-                                                         sort_key_type=sort_key[KEY_SORTKEY_TYPE])
+                                                         row_limit=row_limit, since_index=last_index,
+                                                         sort_key_col=sort_key.get(KEY_SORT_KEY_COL),
+                                                         sort_key_type=sort_key.get(KEY_SORTKEY_TYPE))
 
             if data:
                 # append schema col

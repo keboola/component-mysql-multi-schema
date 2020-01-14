@@ -82,5 +82,7 @@ class Client:
         return rows, col_names, str(last_id)
 
     def _get_last_id(self, rows, col_names, index_column):
+        if not index_column:
+            return None
         pk_index = col_names.index(index_column)
         return rows[-1][pk_index]
