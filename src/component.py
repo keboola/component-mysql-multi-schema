@@ -102,16 +102,24 @@ class Component(KBCEnvHandler):
         downloaded_tables = {}
         downloaded_tables_indexes = dict()
         for t in params[KEY_TABLES]:
+            incremental_fetch = t.get(KEY_INCREMENTAL_FETCH, True)
             name = t[KEY_NAME]
             columns = t[KEY_COLUMNS]
             pkey = t.get(KEY_PKEY)
+            if not isinstance(pkey, list):
+                pkey = [pkey]
             # get sort key
-            sort_key = t.get(KEY_SORT_KEY, {KEY_SORTKEY_TYPE: 'numeric', KEY_SORT_KEY_COL: pkey})
+            # validate
+            if incremental_fetch and len(pkey) > 1 and not t.get(KEY_SORT_KEY):
+                raise Exception(
+                    f'Table "{name}" containing a composite pkey is set to incremental fetch '
+                    f'but no sort key is specified! ')
+            sort_key = t.get(KEY_SORT_KEY, {KEY_SORTKEY_TYPE: 'numeric', KEY_SORT_KEY_COL: ','.join(pkey)})
             last_index = None
-            if params.get(KEY_INCREMENTAL_FETCH):
+            if incremental_fetch:
                 last_index = self.last_state.get('.'.join([schema, name]))
 
-            logging.info(f"Downloading table {name} from schema {schema}.")
+            logging.info(f"Downloading table '{name}' from schema '{schema}''.")
 
             data, col_names, last_id = cl.get_table_data(name, schema, columns=columns,
                                                          row_limit=params.get(KEY_ROW_LIMIT), since_index=last_index,
@@ -121,8 +129,9 @@ class Component(KBCEnvHandler):
             if data:
                 # append schema col
                 col_names.append('schema_nm')
+                pkey.append('schema_nm')
                 self.store_table_data(data, name, schema)
-                downloaded_tables[name] = {'columns': col_names, 'pk': [pkey, 'schema_nm']}
+                downloaded_tables[name] = {'columns': col_names, 'pk': pkey}
                 downloaded_tables_indexes['.'.join([schema, name])] = last_id
         return downloaded_tables, downloaded_tables_indexes
 
