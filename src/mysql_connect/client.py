@@ -67,7 +67,7 @@ class Client:
         try:
             if logging.DEBUG == logging.root.level:
                 # wait before each message
-                time.sleep(0.5)
+                # time.sleep(0.5)
                 logging.debug(f'Executing query: {sql}')
             cur.execute(sql)
             rows = cur.fetchall()
