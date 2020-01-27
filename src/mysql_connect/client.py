@@ -2,7 +2,6 @@ import logging
 
 import pymysql
 import regex
-import time
 
 
 class ClientError(Exception):
