@@ -7,6 +7,7 @@ import csv
 import logging
 import os
 import sys
+import time
 
 from kbc.env_handler import KBCEnvHandler
 
@@ -30,13 +31,13 @@ KEY_HOST = 'host'
 KEY_PORT = 'port'
 KEY_TABLES = 'tables'
 KEY_INCREMENTAL_FETCH = 'incremental_fetch'
+KEY_MAX_RUNTIME_SEC = 'max_runtime_sec'
 
+# max runtime default 6.5hrs
+MAX_RUNTIME_SEC = 23400
 # #### Keep for debug
 KEY_DEBUG = 'debug'
 MANDATORY_PARS = [KEY_USER, KEY_PASSWORD, KEY_HOST, KEY_PORT, KEY_TABLES, [KEY_SCHEMA_PATTERN, KEY_SCHEMA_LIST]]
-MANDATORY_IMAGE_PARS = []
-
-APP_VERSION = '0.0.2'
 
 
 class Component(KBCEnvHandler):
@@ -53,17 +54,18 @@ class Component(KBCEnvHandler):
             self.set_gelf_logger(log_level)
         else:
             self.set_default_logger(log_level)
-        logging.info('Running version %s', APP_VERSION)
         logging.info('Loading configuration...')
 
         try:
             self.validate_config(MANDATORY_PARS)
-            self.validate_image_parameters(MANDATORY_IMAGE_PARS)
         except ValueError as e:
             logging.exception(e)
             exit(1)
         state = self.get_state_file()
         self.last_state = state if state else dict()
+        # init execution timer
+        self.start_time = time.process_time()
+        self.max_runtime_sec = float(self.cfg_params.get(KEY_MAX_RUNTIME_SEC, MAX_RUNTIME_SEC))
 
     def run(self):
         '''
@@ -82,10 +84,18 @@ class Component(KBCEnvHandler):
         # iterate through schemas
         res_tables = dict()
         last_indexes = dict()
-        for s in schemas:
+        total_schemas = len(schemas)
+        logging.info(f'{total_schemas} schemas found matching the filter/pattern.')
+        for i, s in enumerate(schemas):
+            if i % 10 == 0:
+                logging.info(f'Processing {i}. schema out of {total_schemas}.')
             table_cols, downloaded_tables_indexes = self.download_tables(s, params)
             last_indexes = {**last_indexes, **downloaded_tables_indexes}
             res_tables = {**res_tables, **table_cols}
+            if self.is_timed_out():
+                logging.warning(f'Max exection time of {self.max_runtime_sec}s has been reached. '
+                                f'Terminating. Job will continue next run.')
+                break
 
         self.write_state_file(last_indexes)
 
@@ -158,8 +168,10 @@ class Component(KBCEnvHandler):
                 r.append(schema)
                 writer.writerow(r)
 
+    def is_timed_out(self):
+        elapsed = time.process_time() - self.start_time
+        return elapsed >= self.max_runtime_sec
 
-# ####### EXAMPLE TO REMOVE END
 
 """
         Main entrypoint
