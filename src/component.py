@@ -87,6 +87,7 @@ class Component(KBCEnvHandler):
         total_schemas = len(schemas)
         logging.info(f'{total_schemas} schemas found matching the filter/pattern.')
         for i, s in enumerate(schemas):
+            logging.info(f'Dowloading all tables from schema {s}')
             if i % 10 == 0:
                 logging.info(f'Processing {i}. schema out of {total_schemas}.')
             table_cols, downloaded_tables_indexes = self.download_tables(s, params)
@@ -133,7 +134,7 @@ class Component(KBCEnvHandler):
                     f'Table "{name}" containing a composite pkey is set to incremental fetch '
                     f'but no sort key is specified! ')
 
-            logging.info(f"Downloading table '{name}' from schema '{schema}''.")
+            logging.debug(f"Downloading table '{name}' from schema '{schema}''.")
 
             data, col_names, last_id = cl.get_table_data(name, schema, columns=columns,
                                                          row_limit=row_limit, since_index=last_index,
