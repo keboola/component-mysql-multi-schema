@@ -3,7 +3,10 @@ Template Component main class.
 
 '''
 
+import base64
 import csv
+import gzip
+import json
 import logging
 import os
 import sys
@@ -82,6 +85,7 @@ class Component(KBCEnvHandler):
             schemas = schema_list
 
         # iterate through schemas
+        last_state = self.get_last_state()
         res_tables = dict()
         last_indexes = dict()
         total_schemas = len(schemas)
@@ -90,7 +94,7 @@ class Component(KBCEnvHandler):
             logging.info(f'Dowloading all tables from schema {s}')
             if i % 10 == 0:
                 logging.info(f'Processing {i}. schema out of {total_schemas}.')
-            table_cols, downloaded_tables_indexes = self.download_tables(s, params)
+            table_cols, downloaded_tables_indexes = self.download_tables(s, params, last_state)
             last_indexes = {**last_indexes, **downloaded_tables_indexes}
             res_tables = {**res_tables, **table_cols}
             if self.is_timed_out():
@@ -98,7 +102,11 @@ class Component(KBCEnvHandler):
                                 f'Terminating. Job will continue next run.')
                 break
 
-        self.write_state_file(last_indexes)
+        # gzip and store state
+        data = json.dumps(last_indexes)
+        data_gzipped = gzip.compress(bytes(data, 'utf-8'))
+        data_gzipped = str(base64.b64encode(data_gzipped), 'utf-8')
+        self.write_state_file({'data': data_gzipped})
 
         # store manifest
         for t in res_tables:
@@ -106,9 +114,9 @@ class Component(KBCEnvHandler):
                                                     columns=res_tables[t]['columns'],
                                                     incremental=True, primary_key=res_tables[t]['pk'])
         logging.debug(res_tables)
-        logging.info(last_indexes)
+        logging.debug(last_indexes)
 
-    def download_tables(self, schema, params):
+    def download_tables(self, schema, params, last_state):
         cl = Client(params[KEY_HOST], params[KEY_PORT], params[KEY_USER], params[KEY_PASSWORD])
         downloaded_tables = {}
         downloaded_tables_indexes = dict()
@@ -125,7 +133,7 @@ class Component(KBCEnvHandler):
             if incremental_fetch:
                 row_limit = params.get(KEY_ROW_LIMIT)
                 sort_key = t.get(KEY_SORT_KEY, {KEY_SORTKEY_TYPE: 'numeric', KEY_SORT_KEY_COL: ','.join(pkey)})
-                last_index = self.last_state.get('.'.join([schema, name]))
+                last_index = last_state.get(schema, {}).get(name)
 
             # get sort key
             # validate
@@ -147,7 +155,8 @@ class Component(KBCEnvHandler):
                 pkey.append('schema_nm')
                 self.store_table_data(data, name, schema)
                 downloaded_tables[name] = {'columns': col_names, 'pk': pkey}
-                downloaded_tables_indexes['.'.join([schema, name])] = last_id
+                downloaded_tables_indexes[schema] = {**{name: last_id},
+                                                     **downloaded_tables_indexes.get(schema, dict())}
         return downloaded_tables, downloaded_tables_indexes
 
     def store_table_data(self, data, name, schema):
@@ -172,6 +181,15 @@ class Component(KBCEnvHandler):
     def is_timed_out(self):
         elapsed = time.process_time() - self.start_time
         return elapsed >= self.max_runtime_sec
+
+    def get_last_state(self):
+        last_state = self.last_state
+        if not last_state.get('data'):
+            return dict()
+        else:
+            # unzip
+            val = gzip.decompress(base64.b64decode(last_state['data'].encode('utf-8'))).decode()
+            return json.loads(val)
 
 
 """
