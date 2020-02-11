@@ -69,6 +69,7 @@ class Component(KBCEnvHandler):
         # init execution timer
         self.start_time = time.process_time()
         self.max_runtime_sec = float(self.cfg_params.get(KEY_MAX_RUNTIME_SEC, MAX_RUNTIME_SEC))
+        self._res_file_cache = dict()
 
     def run(self):
         '''
@@ -113,6 +114,7 @@ class Component(KBCEnvHandler):
             self.configuration.write_table_manifest(os.path.join(self.tables_out_path, t),
                                                     columns=res_tables[t]['columns'],
                                                     incremental=True, primary_key=res_tables[t]['pk'])
+        self._close_res_stream()
         logging.debug(res_tables)
         logging.debug(last_indexes)
 
@@ -165,18 +167,20 @@ class Component(KBCEnvHandler):
             os.mkdir(folder_path)
 
         file_path = os.path.join(folder_path, name + '.csv')
-        if os.path.exists(file_path):
-            mode = 'a'
-        else:
-            mode = 'w+'
 
-        with open(file_path, mode, newline='', encoding='utf-8') as out_file:
+        # append if exists
+        if self._res_file_cache.get(file_path):
+            writer = self._res_file_cache.get(file_path)
+        else:
+            out_file = open(file_path, 'w+', encoding='utf-8', newline='')
             writer = csv.writer(out_file)
-            for r in data:
-                # append schema name
-                r = list(r)
-                r.append(schema)
-                writer.writerow(r)
+            self._res_file_cache[file_path] = writer
+
+        for r in data:
+            # append schema name
+            r = list(r)
+            r.append(schema)
+            writer.writerow(r)
 
     def is_timed_out(self):
         elapsed = time.process_time() - self.start_time
@@ -190,6 +194,15 @@ class Component(KBCEnvHandler):
             # unzip
             val = gzip.decompress(base64.b64decode(last_state['data'].encode('utf-8'))).decode()
             return json.loads(val)
+
+    def _close_res_stream(self):
+        """
+        Close all output streams / files. Has to be called at end of extraction, before result processing.
+
+        :return:
+        """
+        for res in self._res_file_cache:
+            self._res_file_cache[res].close()
 
 
 """
