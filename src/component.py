@@ -170,12 +170,12 @@ class Component(KBCEnvHandler):
 
         # append if exists
         if self._res_file_cache.get(file_path):
-            writer = self._res_file_cache.get(file_path)
+            out_file = self._res_file_cache.get(file_path)
         else:
             out_file = open(file_path, 'w+', encoding='utf-8', newline='')
-            writer = csv.writer(out_file)
-            self._res_file_cache[file_path] = writer
+            self._res_file_cache[file_path] = out_file
 
+        writer = csv.writer(out_file)
         for r in data:
             # append schema name
             r = list(r)
