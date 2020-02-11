@@ -164,7 +164,7 @@ class Component(KBCEnvHandler):
         if not os.path.exists(folder_path):
             os.mkdir(folder_path)
 
-        file_path = os.path.join(folder_path, name + '_' + schema + '.csv')
+        file_path = os.path.join(folder_path, name + '.csv')
         if os.path.exists(file_path):
             mode = 'a'
         else:
