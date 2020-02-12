@@ -67,7 +67,7 @@ class Component(KBCEnvHandler):
         state = self.get_state_file()
         self.last_state = state if state else dict()
         # init execution timer
-        self.start_time = time.process_time()
+        self.start_time = time.perf_counter()
         self.max_runtime_sec = float(self.cfg_params.get(KEY_MAX_RUNTIME_SEC, MAX_RUNTIME_SEC))
         self._res_file_cache = dict()
 
@@ -183,7 +183,7 @@ class Component(KBCEnvHandler):
             writer.writerow(r)
 
     def is_timed_out(self):
-        elapsed = time.process_time() - self.start_time
+        elapsed = time.perf_counter() - self.start_time
         return elapsed >= self.max_runtime_sec
 
     def get_last_state(self):
