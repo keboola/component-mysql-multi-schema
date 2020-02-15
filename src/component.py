@@ -159,6 +159,11 @@ class Component(KBCEnvHandler):
                 downloaded_tables[name] = {'columns': col_names, 'pk': pkey}
                 downloaded_tables_indexes[schema] = {**{name: last_id},
                                                      **downloaded_tables_indexes.get(schema, dict())}
+            if self.is_timed_out():
+                logging.warning(f'Max exection time of {self.max_runtime_sec}s has been reached. '
+                                f'Terminating. Job will continue next run.')
+                break
+
         return downloaded_tables, downloaded_tables_indexes
 
     def store_table_data(self, data, name, schema):
