@@ -80,6 +80,24 @@ class Client:
 
         return rows, col_names, str(last_id)
 
+    def get_table_row_count(self, table_name, schema):
+        cur = self.db.cursor()
+        sql = f'SELECT COUNT(*) as cnt FROM {schema}.{table_name};'
+        rows = []
+        col_names = []
+        try:
+            cur.execute(sql)
+            rows = cur.fetchall()
+            if rows:
+                for i in cur.description:
+                    col_names.append(i[0])
+
+        except Exception as e:
+            self.db.close()
+            raise ClientError(f'Failed to execute query {sql}! {e}')
+
+        return rows, col_names
+
     def _get_last_id(self, rows, col_names, index_column):
         if not index_column:
             return None

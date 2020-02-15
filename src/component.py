@@ -95,19 +95,18 @@ class Component(KBCEnvHandler):
             logging.info(f'Dowloading all tables from schema {s}')
             if i % 10 == 0:
                 logging.info(f'Processing {i}. schema out of {total_schemas}.')
-            table_cols, downloaded_tables_indexes = self.download_tables(s, params, last_state)
-            last_indexes = {**last_indexes, **downloaded_tables_indexes}
+            table_cols = self.download_table_row_counts(s, params)
             res_tables = {**res_tables, **table_cols}
             if self.is_timed_out():
                 logging.warning(f'Max exection time of {self.max_runtime_sec}s has been reached. '
                                 f'Terminating. Job will continue next run.')
                 break
 
-        # gzip and store state
-        data = json.dumps(last_indexes)
-        data_gzipped = gzip.compress(bytes(data, 'utf-8'))
-        data_gzipped = str(base64.b64encode(data_gzipped), 'utf-8')
-        self.write_state_file({'data': data_gzipped})
+        # # gzip and store state
+        # data = json.dumps(last_indexes)
+        # data_gzipped = gzip.compress(bytes(data, 'utf-8'))
+        # data_gzipped = str(base64.b64encode(data_gzipped), 'utf-8')
+        # self.write_state_file({'data': data_gzipped})
 
         # store manifest
         for t in res_tables:
@@ -146,10 +145,7 @@ class Component(KBCEnvHandler):
 
             logging.debug(f"Downloading table '{name}' from schema '{schema}''.")
 
-            data, col_names, last_id = cl.get_table_data(name, schema, columns=columns,
-                                                         row_limit=row_limit, since_index=last_index,
-                                                         sort_key_col=sort_key.get(KEY_SORT_KEY_COL),
-                                                         sort_key_type=sort_key.get(KEY_SORTKEY_TYPE))
+            data, col_names, last_id = cl.get_table_row_count(name, schema)
 
             if data:
                 # append schema col
@@ -165,6 +161,29 @@ class Component(KBCEnvHandler):
                 break
 
         return downloaded_tables, downloaded_tables_indexes
+
+    def download_table_row_counts(self, schema, params):
+        cl = Client(params[KEY_HOST], params[KEY_PORT], params[KEY_USER], params[KEY_PASSWORD])
+        downloaded_tables = {}
+        downloaded_tables_indexes = dict()
+        for t in params[KEY_TABLES]:
+            name = t[KEY_NAME]
+
+            logging.debug(f"Downloading row count of table '{name}' from schema '{schema}''.")
+
+            data, col_names = cl.get_table_row_count(name, schema)
+
+            if data:
+                # append schema col
+                col_names.append('table')
+                self.store_table_data(data, name, schema)
+                downloaded_tables['row_counts'] = {'columns': col_names, 'pk': ['table']}
+            if self.is_timed_out():
+                logging.warning(f'Max exection time of {self.max_runtime_sec}s has been reached. '
+                                f'Terminating. Job will continue next run.')
+                break
+
+        return downloaded_tables
 
     def store_table_data(self, data, name, schema):
         folder_path = os.path.join(self.tables_out_path, name)
@@ -185,6 +204,27 @@ class Component(KBCEnvHandler):
             # append schema name
             r = list(r)
             r.append(schema)
+            writer.writerow(r)
+
+    def store_table_count_data(self, data, name, schema):
+        folder_path = os.path.join(self.tables_out_path, 'row_counts')
+        if not os.path.exists(folder_path):
+            os.mkdir(folder_path)
+
+        file_path = os.path.join(folder_path, 'row_counts' + '.csv')
+
+        # append if exists
+        if self._res_file_cache.get(file_path):
+            out_file = self._res_file_cache.get(file_path)
+        else:
+            out_file = open(file_path, 'w+', encoding='utf-8', newline='')
+            self._res_file_cache[file_path] = out_file
+
+        writer = csv.writer(out_file)
+        for r in data:
+            # append schema name
+            r = list(r)
+            r.append(f'{schema}.{name}')
             writer.writerow(r)
 
     def is_timed_out(self):
