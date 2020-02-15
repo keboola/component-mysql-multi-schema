@@ -117,50 +117,50 @@ class Component(KBCEnvHandler):
         logging.debug(res_tables)
         logging.debug(last_indexes)
 
-    def download_tables(self, schema, params, last_state):
-        cl = Client(params[KEY_HOST], params[KEY_PORT], params[KEY_USER], params[KEY_PASSWORD])
-        downloaded_tables = {}
-        downloaded_tables_indexes = dict()
-        for t in params[KEY_TABLES]:
-            incremental_fetch = t.get(KEY_INCREMENTAL_FETCH, True)
-            name = t[KEY_NAME]
-            columns = t[KEY_COLUMNS]
-            pkey = t.get(KEY_PKEY)
-            last_index = None
-            row_limit = None
-            sort_key = dict()
-            if not isinstance(pkey, list):
-                pkey = [pkey]
-            if incremental_fetch:
-                row_limit = params.get(KEY_ROW_LIMIT)
-                sort_key = t.get(KEY_SORT_KEY, {KEY_SORTKEY_TYPE: 'numeric', KEY_SORT_KEY_COL: ','.join(pkey)})
-                last_index = last_state.get(schema, {}).get(name)
-
-            # get sort key
-            # validate
-            if incremental_fetch and len(pkey) > 1 and not t.get(KEY_SORT_KEY):
-                raise Exception(
-                    f'Table "{name}" containing a composite pkey is set to incremental fetch '
-                    f'but no sort key is specified! ')
-
-            logging.debug(f"Downloading table '{name}' from schema '{schema}''.")
-
-            data, col_names, last_id = cl.get_table_row_count(name, schema)
-
-            if data:
-                # append schema col
-                col_names.append('schema_nm')
-                pkey.append('schema_nm')
-                self.store_table_data(data, name, schema)
-                downloaded_tables[name] = {'columns': col_names, 'pk': pkey}
-                downloaded_tables_indexes[schema] = {**{name: last_id},
-                                                     **downloaded_tables_indexes.get(schema, dict())}
-            if self.is_timed_out():
-                logging.warning(f'Max exection time of {self.max_runtime_sec}s has been reached. '
-                                f'Terminating. Job will continue next run.')
-                break
-
-        return downloaded_tables, downloaded_tables_indexes
+    # def download_tables(self, schema, params, last_state):
+    #     cl = Client(params[KEY_HOST], params[KEY_PORT], params[KEY_USER], params[KEY_PASSWORD])
+    #     downloaded_tables = {}
+    #     downloaded_tables_indexes = dict()
+    #     for t in params[KEY_TABLES]:
+    #         incremental_fetch = t.get(KEY_INCREMENTAL_FETCH, True)
+    #         name = t[KEY_NAME]
+    #         columns = t[KEY_COLUMNS]
+    #         pkey = t.get(KEY_PKEY)
+    #         last_index = None
+    #         row_limit = None
+    #         sort_key = dict()
+    #         if not isinstance(pkey, list):
+    #             pkey = [pkey]
+    #         if incremental_fetch:
+    #             row_limit = params.get(KEY_ROW_LIMIT)
+    #             sort_key = t.get(KEY_SORT_KEY, {KEY_SORTKEY_TYPE: 'numeric', KEY_SORT_KEY_COL: ','.join(pkey)})
+    #             last_index = last_state.get(schema, {}).get(name)
+    #
+    #         # get sort key
+    #         # validate
+    #         if incremental_fetch and len(pkey) > 1 and not t.get(KEY_SORT_KEY):
+    #             raise Exception(
+    #                 f'Table "{name}" containing a composite pkey is set to incremental fetch '
+    #                 f'but no sort key is specified! ')
+    #
+    #         logging.debug(f"Downloading table '{name}' from schema '{schema}''.")
+    #
+    #         data, col_names, last_id = cl.get_table_row_count(name, schema)
+    #
+    #         if data:
+    #             # append schema col
+    #             col_names.append('schema_nm')
+    #             pkey.append('schema_nm')
+    #             self.store_table_data(data, name, schema)
+    #             downloaded_tables[name] = {'columns': col_names, 'pk': pkey}
+    #             downloaded_tables_indexes[schema] = {**{name: last_id},
+    #                                                  **downloaded_tables_indexes.get(schema, dict())}
+    #         if self.is_timed_out():
+    #             logging.warning(f'Max exection time of {self.max_runtime_sec}s has been reached. '
+    #                             f'Terminating. Job will continue next run.')
+    #             break
+    #
+    #     return downloaded_tables, downloaded_tables_indexes
 
     def download_table_row_counts(self, schema, params):
         cl = Client(params[KEY_HOST], params[KEY_PORT], params[KEY_USER], params[KEY_PASSWORD])
