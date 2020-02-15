@@ -176,7 +176,7 @@ class Component(KBCEnvHandler):
             if data:
                 # append schema col
                 col_names.append('table')
-                self.store_table_data(data, name, schema)
+                self.store_table_count_data(data, name, schema)
                 downloaded_tables['row_counts'] = {'columns': col_names, 'pk': ['table']}
             if self.is_timed_out():
                 logging.warning(f'Max exection time of {self.max_runtime_sec}s has been reached. '
