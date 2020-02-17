@@ -86,7 +86,7 @@ class Component(KBCEnvHandler):
             schemas = schema_list
 
         # iterate through schemas
-        last_state = self.get_last_state()
+        # last_state = self.get_last_state()
         res_tables = dict()
         last_indexes = dict()
         total_schemas = len(schemas)
@@ -165,7 +165,7 @@ class Component(KBCEnvHandler):
     def download_table_row_counts(self, schema, params):
         cl = Client(params[KEY_HOST], params[KEY_PORT], params[KEY_USER], params[KEY_PASSWORD])
         downloaded_tables = {}
-        downloaded_tables_indexes = dict()
+        # downloaded_tables_indexes = dict()
         for t in params[KEY_TABLES]:
             name = t[KEY_NAME]
 
