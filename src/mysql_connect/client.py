@@ -43,6 +43,7 @@ class Client:
 
     def get_table_data(self, table_name, schema, columns=None, row_limit=None, since_index=None,
                        sort_key_col=None, sort_key_type=None):
+        self.db.query('SET GLOBAL connect_timeout=1')
         cur = self.db.cursor()
         if columns and columns != []:
             columns = ','.join(columns)
