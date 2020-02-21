@@ -74,9 +74,16 @@ class Client:
                 for i in cur.description:
                     col_names.append(i[0])
                 last_id = self._get_last_id(rows, col_names, sort_key_col)
+        except pymysql.Error as e:
+            if e.args[0] == 1146:
+                logging.warning(f'Table {table_name} does not exist in schema {schema}, '
+                                f'skipping!')
+            else:
+                raise ClientError(f'Failed to execute query {sql}!') from e
+            pass
         except Exception as e:
             self.db.close()
-            raise ClientError(f'Failed to execute query {sql}! {e}')
+            raise ClientError(f'Failed to execute query {sql}!') from e
 
         return rows, col_names, str(last_id)
 
