@@ -1,7 +1,12 @@
 import logging
+import time
 
 import pymysql
 import regex
+
+MAX_RETRIES = 2
+
+RETRY_CODES = [2013]
 
 
 class ClientError(Exception):
@@ -43,7 +48,7 @@ class Client:
 
     def get_table_data(self, table_name, schema, columns=None, row_limit=None, since_index=None,
                        sort_key_col=None, sort_key_type=None):
-        self.db.query('SET GLOBAL connect_timeout=1')
+
         cur = self.db.cursor()
         if columns and columns != []:
             columns = ','.join(columns)
@@ -69,7 +74,7 @@ class Client:
                 # wait before each message
                 # time.sleep(0.5)
                 logging.debug(f'Executing query: {sql}')
-            cur.execute(sql)
+            cur = self.__try_execute(cur, sql)
             rows = cur.fetchall()
             if rows:
                 for i in cur.description:
@@ -87,6 +92,25 @@ class Client:
             raise ClientError(f'Failed to execute query {sql}!') from e
 
         return rows, col_names, str(last_id)
+
+    def __try_execute(self, cursor, query):
+        retries = 1
+        retry = True
+        while retry:
+            try:
+                cursor.execute(query)
+                retry = False
+            except pymysql.Error as e:
+                if e.args[0] in RETRY_CODES and retries <= MAX_RETRIES:
+                    logging.warning(f'Query failed retrying {retries}x')
+                    time.sleep(2 ^ retries)
+                    retries += 1
+                    self.db.close()
+                    self.db.connect()
+                    cursor = self.db.cursor()
+                else:
+                    raise e
+        return cursor
 
     def _get_last_id(self, rows, col_names, index_column):
         if not index_column:
