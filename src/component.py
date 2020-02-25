@@ -37,7 +37,7 @@ KEY_INCREMENTAL_FETCH = 'incremental_fetch'
 KEY_MAX_RUNTIME_SEC = 'max_runtime_sec'
 
 # max runtime default 6.5hrs
-MAX_RUNTIME_SEC = 23400
+MAX_RUNTIME_SEC = 21600
 # #### Keep for debug
 KEY_DEBUG = 'debug'
 MANDATORY_PARS = [KEY_USER, KEY_PASSWORD, KEY_HOST, KEY_PORT, KEY_TABLES, [KEY_SCHEMA_PATTERN, KEY_SCHEMA_LIST]]
