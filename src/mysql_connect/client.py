@@ -54,8 +54,8 @@ class Client:
 
         start = time.perf_counter()
 
-        cur = self.__get_cursor()
-        # cur = self.db.cursor()
+        # cur = self.__get_cursor()
+        cur = self.db.cursor()
 
         elapsed = time.perf_counter() - start
         logging.debug(f'Get Cursor took: {elapsed:.5f}s')
