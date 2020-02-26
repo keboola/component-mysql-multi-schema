@@ -4,6 +4,8 @@ import time
 import pymysql
 import regex
 
+READ_TIMEOUT = 1800
+
 MAX_RETRIES = 2
 
 RETRY_CODES = [2013]
@@ -23,7 +25,8 @@ class Client:
             'user': user,
             'password': password,
             'host': host,
-            'port': port
+            'port': port,
+            'read_timeout': READ_TIMEOUT
         }
 
         self.db = pymysql.connect(**db_opts)
@@ -114,7 +117,7 @@ class Client:
 
     def __get_cursor(self):
         try:
-            self.db.ping(reconnect=True, attempts=3, delay=5)
+            self.db.ping(reconnect=True)
         except pymysql.Error as err:
             # reconnect your cursor
             self.db.close()
