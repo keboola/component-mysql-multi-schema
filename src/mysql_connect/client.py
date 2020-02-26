@@ -52,7 +52,13 @@ class Client:
     def get_table_data(self, table_name, schema, columns=None, row_limit=None, since_index=None,
                        sort_key_col=None, sort_key_type=None):
 
+        start = time.perf_counter()
+
         cur = self.__get_cursor()
+
+        elapsed = time.perf_counter() - start
+        logging.debug(f'Get Cursor took: {elapsed}s')
+        start = time.perf_counter()
         if columns and columns != []:
             columns = ','.join(columns)
         else:
@@ -79,10 +85,14 @@ class Client:
                 logging.debug(f'Executing query: {sql}')
             cur = self.__try_execute(cur, sql)
             rows = cur.fetchall()
+            # timer
+            elapsed = time.perf_counter() - start
+            logging.debug(f'Query took: {elapsed}s')
             if rows:
                 for i in cur.description:
                     col_names.append(i[0])
                 last_id = self._get_last_id(rows, col_names, sort_key_col)
+
         except pymysql.Error as e:
             if e.args[0] == 1146:
                 logging.warning(f'Table {table_name} does not exist in schema {schema}, '
