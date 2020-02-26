@@ -119,6 +119,7 @@ class Client:
         try:
             self.db.ping(reconnect=True)
         except pymysql.Error as err:
+            logging.debug(f'Ping failed, reconnecting. {err}')
             # reconnect your cursor
             self.db.close()
             self.db.connect()
