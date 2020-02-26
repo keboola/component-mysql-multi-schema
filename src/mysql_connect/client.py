@@ -4,6 +4,8 @@ import time
 import pymysql
 import regex
 
+READ_TIMEOUT = 1800
+
 MAX_RETRIES = 2
 
 RETRY_CODES = [2013]
@@ -23,13 +25,14 @@ class Client:
             'user': user,
             'password': password,
             'host': host,
-            'port': port
+            'port': port,
+            'read_timeout': READ_TIMEOUT
         }
 
         self.db = pymysql.connect(**db_opts)
 
     def get_available_schemas(self):
-        cur = self.db.cursor()
+        cur = self.__get_cursor()
 
         sql = 'SHOW SCHEMAS'
         rows = []
@@ -49,7 +52,7 @@ class Client:
     def get_table_data(self, table_name, schema, columns=None, row_limit=None, since_index=None,
                        sort_key_col=None, sort_key_type=None):
 
-        cur = self.db.cursor()
+        cur = self.__get_cursor()
         if columns and columns != []:
             columns = ','.join(columns)
         else:
@@ -111,6 +114,16 @@ class Client:
                 else:
                     raise e
         return cursor
+
+    def __get_cursor(self):
+        try:
+            self.db.ping(reconnect=True)
+        except pymysql.Error as err:
+            logging.debug(f'Ping failed, reconnecting. {err}')
+            # reconnect your cursor
+            self.db.close()
+            self.db.connect()
+        return self.db.cursor()
 
     def _get_last_id(self, rows, col_names, index_column):
         if not index_column:
