@@ -55,9 +55,10 @@ class Client:
         start = time.perf_counter()
 
         cur = self.__get_cursor()
+        # cur = self.db.cursor()
 
         elapsed = time.perf_counter() - start
-        logging.debug(f'Get Cursor took: {elapsed}s')
+        logging.debug(f'Get Cursor took: {elapsed:.5f}s')
         start = time.perf_counter()
         if columns and columns != []:
             columns = ','.join(columns)
@@ -87,7 +88,7 @@ class Client:
             rows = cur.fetchall()
             # timer
             elapsed = time.perf_counter() - start
-            logging.debug(f'Query took: {elapsed}s')
+            logging.debug(f'Query took: {elapsed:.5f}s')
             if rows:
                 for i in cur.description:
                     col_names.append(i[0])
