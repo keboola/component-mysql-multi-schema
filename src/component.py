@@ -115,8 +115,6 @@ class Component(KBCEnvHandler):
                                                     columns=res_tables[t]['columns'],
                                                     incremental=True, primary_key=res_tables[t]['pk'])
         self._close_res_stream()
-        logging.debug(res_tables)
-        logging.debug(last_indexes)
 
     def download_tables(self, schema, params, last_state):
         cl = Client(params[KEY_HOST], params[KEY_PORT], params[KEY_USER], params[KEY_PASSWORD])

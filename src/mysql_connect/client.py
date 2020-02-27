@@ -52,13 +52,8 @@ class Client:
     def get_table_data(self, table_name, schema, columns=None, row_limit=None, since_index=None,
                        sort_key_col=None, sort_key_type=None):
 
-        start = time.perf_counter()
-
-        # cur = self.__get_cursor()
         cur = self.db.cursor()
 
-        elapsed = time.perf_counter() - start
-        logging.debug(f'Get Cursor took: {elapsed:.5f}s')
         start = time.perf_counter()
         if columns and columns != []:
             columns = ','.join(columns)
