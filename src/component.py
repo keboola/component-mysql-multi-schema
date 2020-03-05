@@ -36,6 +36,8 @@ KEY_TABLES = 'tables'
 KEY_INCREMENTAL_FETCH = 'incremental_fetch'
 KEY_MAX_RUNTIME_SEC = 'max_runtime_sec'
 
+KEY_VALIDATION_MODE = 'validation_mode'
+
 # max runtime default 6.5hrs
 MAX_RUNTIME_SEC = 21600
 # #### Keep for debug
@@ -85,6 +87,7 @@ class Component(KBCEnvHandler):
         else:
             schemas = schema_list
 
+        validation_mode = params.get(KEY_VALIDATION_MODE, False)
         # iterate through schemas
         last_state = self.get_last_state()
         res_tables = dict()
@@ -98,6 +101,10 @@ class Component(KBCEnvHandler):
             table_cols, downloaded_tables_indexes = self.download_tables(s, params, last_state)
             last_indexes = {**last_indexes, **downloaded_tables_indexes}
             res_tables = {**res_tables, **table_cols}
+            # get table counts if validation
+            if validation_mode:
+                table_cols = self.download_table_row_counts(s, params, downloaded_tables_indexes)
+                res_tables = {**res_tables, **table_cols}
             if self.is_timed_out():
                 logging.warning(f'Max exection time of {self.max_runtime_sec}s has been reached. '
                                 f'Terminating. Job will continue next run.')
@@ -163,6 +170,64 @@ class Component(KBCEnvHandler):
                 break
 
         return downloaded_tables, downloaded_tables_indexes
+
+    def download_table_row_counts(self, schema, params, table_indexes):
+        """
+        Get count of rows until provided last index
+        :param schema:
+        :param params:
+        :param table_indexes:
+        :return:
+        """
+        cl = Client(params[KEY_HOST], params[KEY_PORT], params[KEY_USER], params[KEY_PASSWORD])
+        downloaded_tables = {}
+        # downloaded_tables_indexes = dict()
+        for t in params[KEY_TABLES]:
+            name = t[KEY_NAME]
+            if name not in table_indexes[schema].keys():
+                continue
+            last_index = table_indexes[schema][name]
+            logging.debug(f"Downloading row count of table '{name}' from schema '{schema}''.")
+            pkey = t.get(KEY_PKEY)
+            if not isinstance(pkey, list):
+                pkey = [pkey]
+            sort_key = t.get(KEY_SORT_KEY, {KEY_SORTKEY_TYPE: 'numeric', KEY_SORT_KEY_COL: ','.join(pkey)})
+            data, col_names = cl.get_table_row_count(name, schema, last_index,
+                                                     sort_key.get(KEY_SORT_KEY_COL),
+                                                     sort_key.get(KEY_SORTKEY_TYPE))
+
+            if data:
+                # append schema col
+                col_names.append('table')
+                self.store_table_count_data(data, name, schema)
+                downloaded_tables['row_counts'] = {'columns': col_names, 'pk': ['table']}
+            if self.is_timed_out():
+                logging.warning(f'Max exection time of {self.max_runtime_sec}s has been reached. '
+                                f'Terminating. Job will continue next run.')
+                break
+
+        return downloaded_tables
+
+    def store_table_count_data(self, data, name, schema):
+        folder_path = os.path.join(self.tables_out_path, 'row_counts')
+        if not os.path.exists(folder_path):
+            os.mkdir(folder_path)
+
+        file_path = os.path.join(folder_path, 'row_counts' + '.csv')
+
+        # append if exists
+        if self._res_file_cache.get(file_path):
+            out_file = self._res_file_cache.get(file_path)
+        else:
+            out_file = open(file_path, 'w+', encoding='utf-8', newline='')
+            self._res_file_cache[file_path] = out_file
+
+        writer = csv.writer(out_file)
+        for r in data:
+            # append schema name
+            r = list(r)
+            r.append(f'{schema}.{name}')
+            writer.writerow(r)
 
     def store_table_data(self, data, name, schema):
         folder_path = os.path.join(self.tables_out_path, name)

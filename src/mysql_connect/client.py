@@ -102,6 +102,29 @@ class Client:
 
         return rows, col_names, str(last_id)
 
+    def get_table_row_count(self, table_name, schema, last_index, sort_key_col, sort_key_type):
+        cur = self.db.cursor()
+        sql = f"SELECT COUNT(*) as cnt, '{last_index}' as last_index, " \
+              f"'{sort_key_col}' as sort_key_col  FROM {schema}.{table_name}"
+        if sort_key_type == 'string':
+            last_index = f"'{last_index}'"
+        sql += f' WHERE {sort_key_col} <= {last_index};'
+
+        rows = []
+        col_names = []
+        try:
+            cur.execute(sql)
+            rows = cur.fetchall()
+            if rows:
+                for i in cur.description:
+                    col_names.append(i[0])
+
+        except Exception as e:
+            self.db.close()
+            raise ClientError(f'Failed to execute query {sql}! {e}')
+
+        return rows, col_names
+
     def __try_execute(self, cursor, query):
         retries = 1
         retry = True
