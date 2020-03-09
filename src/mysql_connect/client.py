@@ -54,7 +54,7 @@ class Client:
     def get_table_data(self, table_name, schema, columns=None, row_limit=None, since_index=None,
                        sort_key_col=None, sort_key_type=None):
 
-        cur = self.db.cursor()
+        cur = self.db.cursor(pymysql.cursors.SSCursor)
 
         start = time.perf_counter()
         if columns and columns != []:
@@ -83,7 +83,7 @@ class Client:
                 logging.debug(f'Executing query: {sql}')
             cur = self.__try_execute(cur, sql)
             while True:
-                rows = cur.fetchmany()
+                rows = cur.fetchmany(MAX_CHUNK_SIZE)
                 if rows:
                     for i in cur.description:
                         col_names.append(i[0])
