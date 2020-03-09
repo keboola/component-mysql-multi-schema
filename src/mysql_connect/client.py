@@ -4,7 +4,7 @@ import time
 import pymysql
 import regex
 
-MAX_CHUNK_SIZE = 1000
+MAX_CHUNK_SIZE = 100000
 
 READ_TIMEOUT = 1800
 
