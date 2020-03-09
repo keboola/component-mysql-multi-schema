@@ -4,7 +4,7 @@ import time
 import pymysql
 import regex
 
-MAX_CHUNK_SIZE = 100000
+MAX_CHUNK_SIZE = 10000
 
 READ_TIMEOUT = 1800
 
@@ -143,7 +143,7 @@ class Client:
                     retries += 1
                     self.db.close()
                     self.db.connect()
-                    cursor = self.db.cursor()
+                    cursor = self.db.cursor(pymysql.cursors.SSCursor)
                 else:
                     raise e
         return cursor
