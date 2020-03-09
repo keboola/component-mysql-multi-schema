@@ -4,6 +4,8 @@ import time
 import pymysql
 import regex
 
+MAX_CHUNK_SIZE = 1000
+
 READ_TIMEOUT = 1800
 
 MAX_RETRIES = 2
@@ -80,14 +82,18 @@ class Client:
                 # time.sleep(0.5)
                 logging.debug(f'Executing query: {sql}')
             cur = self.__try_execute(cur, sql)
-            rows = cur.fetchall()
+            while True:
+                rows = cur.fetchmany(MAX_CHUNK_SIZE)
+                if rows:
+                    for i in cur.description:
+                        col_names.append(i[0])
+                    last_id = self._get_last_id(rows, col_names, sort_key_col)
+                    yield rows, col_names, str(last_id)
+                else:
+                    break
             # timer
             elapsed = time.perf_counter() - start
             logging.debug(f'Query took: {elapsed:.5f}s')
-            if rows:
-                for i in cur.description:
-                    col_names.append(i[0])
-                last_id = self._get_last_id(rows, col_names, sort_key_col)
 
         except pymysql.Error as e:
             if e.args[0] == 1146:
@@ -99,8 +105,6 @@ class Client:
         except Exception as e:
             self.db.close()
             raise ClientError(f'Failed to execute query {sql}!') from e
-
-        return rows, col_names, str(last_id)
 
     def get_table_row_count(self, table_name, schema, last_index, sort_key_col, sort_key_type):
         cur = self.db.cursor()

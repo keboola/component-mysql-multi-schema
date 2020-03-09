@@ -151,10 +151,19 @@ class Component(KBCEnvHandler):
 
             logging.debug(f"Downloading table '{name}' from schema '{schema}''.")
 
-            data, col_names, last_id = cl.get_table_data(name, schema, columns=columns,
-                                                         row_limit=row_limit, since_index=last_index,
-                                                         sort_key_col=sort_key.get(KEY_SORT_KEY_COL),
-                                                         sort_key_type=sort_key.get(KEY_SORTKEY_TYPE))
+            downloaded_tables, downloaded_tables_indexes = self.get_table_data_chunks(name, schema, columns, pkey,
+                                                                                      row_limit, last_index, sort_key,
+                                                                                      downloaded_tables,
+                                                                                      downloaded_tables_indexes, cl)
+
+        return downloaded_tables, downloaded_tables_indexes
+
+    def get_table_data_chunks(self, name, schema, columns, pkey, row_limit, last_index, sort_key, downloaded_tables,
+                              downloaded_tables_indexes, client):
+        for data, col_names, last_id in client.get_table_data(name, schema, columns=columns,
+                                                              row_limit=row_limit, since_index=last_index,
+                                                              sort_key_col=sort_key.get(KEY_SORT_KEY_COL),
+                                                              sort_key_type=sort_key.get(KEY_SORTKEY_TYPE)):
 
             if data:
                 # append schema col
@@ -162,13 +171,11 @@ class Component(KBCEnvHandler):
                 pkey.append('schema_nm')
                 self.store_table_data(data, name, schema)
                 downloaded_tables[name] = {'columns': col_names, 'pk': pkey}
-                downloaded_tables_indexes[schema] = {**{name: last_id},
-                                                     **downloaded_tables_indexes.get(schema, dict())}
+                downloaded_tables_indexes[schema] = {**downloaded_tables_indexes.get(schema, dict()), **{name: last_id}}
             if self.is_timed_out():
                 logging.warning(f'Max exection time of {self.max_runtime_sec}s has been reached. '
                                 f'Terminating. Job will continue next run.')
                 break
-
         return downloaded_tables, downloaded_tables_indexes
 
     def download_table_row_counts(self, schema, params, table_indexes):
