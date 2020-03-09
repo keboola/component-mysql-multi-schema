@@ -83,7 +83,7 @@ class Client:
                 logging.debug(f'Executing query: {sql}')
             cur = self.__try_execute(cur, sql)
             while True:
-                rows = cur.fetchone()
+                rows = cur.fetchmany()
                 if rows:
                     for i in cur.description:
                         col_names.append(i[0])
