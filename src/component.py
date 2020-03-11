@@ -155,6 +155,10 @@ class Component(KBCEnvHandler):
                                                                                       row_limit, last_index, sort_key,
                                                                                       downloaded_tables,
                                                                                       downloaded_tables_indexes, cl)
+            if self.is_timed_out():
+                logging.warning(f'Max exection time of {self.max_runtime_sec}s has been reached. '
+                                f'Terminating. Job will continue next run.')
+                break
 
         return downloaded_tables, downloaded_tables_indexes
 
@@ -172,10 +176,7 @@ class Component(KBCEnvHandler):
                 self.store_table_data(data, name, schema)
                 downloaded_tables[name] = {'columns': col_names, 'pk': pkey}
                 downloaded_tables_indexes[schema] = {**downloaded_tables_indexes.get(schema, dict()), **{name: last_id}}
-            if self.is_timed_out():
-                logging.warning(f'Max exection time of {self.max_runtime_sec}s has been reached. '
-                                f'Terminating. Job will continue next run.')
-                break
+
         return downloaded_tables, downloaded_tables_indexes
 
     def download_table_row_counts(self, schema, params, table_indexes):

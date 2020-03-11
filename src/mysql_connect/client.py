@@ -85,7 +85,8 @@ class Client:
             while True:
                 rows = cur.fetchmany(MAX_CHUNK_SIZE)
                 if rows:
-                    logging.debug(f'Fetched {len(rows)} rows')
+                    if logging.DEBUG == logging.root.level:
+                        logging.info(f'Fetched {len(rows)} rows from {schema}.{table_name}')
                     for i in cur.description:
                         col_names.append(i[0])
                     last_id = self._get_last_id(rows, col_names, sort_key_col)
