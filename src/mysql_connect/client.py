@@ -51,28 +51,13 @@ class Client:
         schemas = self.get_available_schemas()
         return [s[0] for s in schemas if regex.search(pattern, s[0])]
 
-    def get_table_data(self, table_name, schema, columns=None, row_limit=None, since_index=None,
-                       sort_key_col=None, sort_key_type=None):
-
-        cur = self.db.cursor(pymysql.cursors.SSCursor)
+    def get_table_data_buffered(self, table_name, schema, columns=None, row_limit=None, since_index=None,
+                                sort_key_col=None, sort_key_type=None):
+        cur = self.db.cursor()
 
         start = time.perf_counter()
-        if columns and columns != []:
-            columns = ','.join(columns)
-        else:
-            columns = '*'
-
-        sql = f'SELECT {columns} FROM {schema}.{table_name}'
-
-        if sort_key_col and since_index:
-            if sort_key_type == 'string':
-                since_index = f"'{since_index}'"
-            sql += f' WHERE {sort_key_col} >= {since_index} ORDER BY {sort_key_col}'
-        elif sort_key_col:
-            sql += f' ORDER BY {sort_key_col}'
-
-        if row_limit:
-            sql += f' LIMIT {row_limit}'
+        sql = self.__build_select_query(columns, sort_key_col, sort_key_type, since_index, row_limit, schema,
+                                        table_name)
         rows = []
         col_names = []
         last_id = None
@@ -81,7 +66,48 @@ class Client:
                 # wait before each message
                 # time.sleep(0.5)
                 logging.debug(f'Executing query: {sql}')
-            cur = self.__try_execute(cur, sql)
+            cur = self.__try_execute(cur, sql, buffered=True)
+            rows = cur.fetchall()
+            if rows:
+                if logging.DEBUG == logging.root.level:
+                    logging.info(f'Fetched {len(rows)} rows from {schema}.{table_name}')
+                for i in cur.description:
+                    col_names.append(i[0])
+                last_id = self._get_last_id(rows, col_names, sort_key_col)
+
+            # timer
+            elapsed = time.perf_counter() - start
+            logging.debug(f'Query took: {elapsed:.5f}s')
+
+        except pymysql.Error as e:
+            if e.args[0] == 1146:
+                logging.warning(f'Table {table_name} does not exist in schema {schema}, '
+                                f'skipping!')
+            else:
+                raise ClientError(f'Failed to execute query {sql}!') from e
+            pass
+        except Exception as e:
+            self.db.close()
+            raise ClientError(f'Failed to execute query {sql}!') from e
+
+        return rows, col_names, str(last_id)
+
+    def get_table_data_chunks(self, table_name, schema, columns=None, row_limit=None, since_index=None,
+                              sort_key_col=None, sort_key_type=None):
+        cur = self.db.cursor(pymysql.cursors.SSCursor)
+
+        start = time.perf_counter()
+        sql = self.__build_select_query(columns, sort_key_col, sort_key_type, since_index, row_limit, schema,
+                                        table_name)
+        rows = []
+        col_names = []
+        last_id = None
+        try:
+            if logging.DEBUG == logging.root.level:
+                # wait before each message
+                # time.sleep(0.5)
+                logging.debug(f'Executing query: {sql}')
+            cur = self.__try_execute(cur, sql, buffered=False)
             while True:
                 rows = cur.fetchmany(MAX_CHUNK_SIZE)
                 if rows:
@@ -108,6 +134,25 @@ class Client:
             self.db.close()
             raise ClientError(f'Failed to execute query {sql}!') from e
 
+    def __build_select_query(self, columns, sort_key_col, sort_key_type, since_index, row_limit, schema, table_name):
+        if columns and columns != []:
+            columns = ','.join(columns)
+        else:
+            columns = '*'
+
+        sql = f'SELECT {columns} FROM {schema}.{table_name}'
+
+        if sort_key_col and since_index:
+            if sort_key_type == 'string':
+                since_index = f"'{since_index}'"
+            sql += f' WHERE {sort_key_col} >= {since_index} ORDER BY {sort_key_col}'
+        elif sort_key_col:
+            sql += f' ORDER BY {sort_key_col}'
+
+        if row_limit:
+            sql += f' LIMIT {row_limit}'
+        return sql
+
     def get_table_row_count(self, table_name, schema, last_index, sort_key_col, sort_key_type):
         cur = self.db.cursor()
         sql = f"SELECT COUNT(*) as cnt, '{last_index}' as last_index, " \
@@ -131,7 +176,7 @@ class Client:
 
         return rows, col_names
 
-    def __try_execute(self, cursor, query):
+    def __try_execute(self, cursor, query, buffered=True):
         retries = 1
         retry = True
         while retry:
@@ -145,7 +190,10 @@ class Client:
                     retries += 1
                     self.db.close()
                     self.db.connect()
-                    cursor = self.db.cursor(pymysql.cursors.SSCursor)
+                    if buffered:
+                        cursor = self.db.cursor()
+                    else:
+                        cursor = self.db.cursor(pymysql.cursors.SSCursor)
                 else:
                     raise e
         return cursor
