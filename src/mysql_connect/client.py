@@ -4,7 +4,7 @@ import time
 import pymysql
 import regex
 
-MAX_CHUNK_SIZE = 10000
+MAX_CHUNK_SIZE = 500000
 
 READ_TIMEOUT = 1800
 
@@ -85,6 +85,7 @@ class Client:
             while True:
                 rows = cur.fetchmany(MAX_CHUNK_SIZE)
                 if rows:
+                    logging.debug(f'Fetched {len(rows)} rows')
                     for i in cur.description:
                         col_names.append(i[0])
                     last_id = self._get_last_id(rows, col_names, sort_key_col)
