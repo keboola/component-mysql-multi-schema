@@ -98,12 +98,12 @@ class Component(KBCEnvHandler):
             logging.info(f'Dowloading all tables from schema {s}')
             if i % 10 == 0:
                 logging.info(f'Processing {i}. schema out of {total_schemas}.')
-            table_cols, downloaded_tables_indexes = self.download_tables(s, params, last_state)
+            table_cols, downloaded_tables_indexes = self.download_tables(s, params, last_state, client)
             last_indexes = {**last_indexes, **downloaded_tables_indexes}
             res_tables = {**res_tables, **table_cols}
             # get table counts if validation
             if validation_mode:
-                table_cols = self.download_table_row_counts(s, params, downloaded_tables_indexes)
+                table_cols = self.download_table_row_counts(s, params, downloaded_tables_indexes, cl)
                 res_tables = {**res_tables, **table_cols}
             if self.is_timed_out():
                 logging.warning(f'Max exection time of {self.max_runtime_sec}s has been reached. '
@@ -123,11 +123,11 @@ class Component(KBCEnvHandler):
                                                     incremental=True, primary_key=res_tables[t]['pk'])
         self._close_res_stream()
 
-    def download_tables(self, schema, params, last_state):
+    def download_tables(self, schema, params, last_state, client):
         """
         Download tables using buffered cursor (in-mem full result)
         """
-        cl = Client(params[KEY_HOST], params[KEY_PORT], params[KEY_USER], params[KEY_PASSWORD])
+        cl = client
         downloaded_tables = {}
         downloaded_tables_indexes = dict()
         for t in params[KEY_TABLES]:
@@ -223,15 +223,16 @@ class Component(KBCEnvHandler):
 
         return downloaded_tables, downloaded_tables_indexes
 
-    def download_table_row_counts(self, schema, params, table_indexes):
+    def download_table_row_counts(self, schema, params, table_indexes, client):
         """
         Get count of rows until provided last index
         :param schema:
         :param params:
         :param table_indexes:
+        :param client: MySQL client instance
         :return:
         """
-        cl = Client(params[KEY_HOST], params[KEY_PORT], params[KEY_USER], params[KEY_PASSWORD])
+        cl = client
         downloaded_tables = {}
         # downloaded_tables_indexes = dict()
         for t in params[KEY_TABLES]:
