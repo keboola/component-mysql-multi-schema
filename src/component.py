@@ -98,7 +98,7 @@ class Component(KBCEnvHandler):
             logging.info(f'Dowloading all tables from schema {s}')
             if i % 10 == 0:
                 logging.info(f'Processing {i}. schema out of {total_schemas}.')
-            table_cols, downloaded_tables_indexes = self.download_tables(s, params, last_state, client)
+            table_cols, downloaded_tables_indexes = self.download_tables(s, params, last_state, cl)
             last_indexes = {**last_indexes, **downloaded_tables_indexes}
             res_tables = {**res_tables, **table_cols}
             # get table counts if validation
