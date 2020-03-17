@@ -87,23 +87,26 @@ class Component(KBCEnvHandler):
         else:
             schemas = schema_list
 
-        validation_mode = params.get(KEY_VALIDATION_MODE, False)
+        # validation_mode = params.get(KEY_VALIDATION_MODE, False)
+        validation_mode = True
         # iterate through schemas
         last_state = self.get_last_state()
         res_tables = dict()
-        last_indexes = dict()
+        # last_indexes = dict()
+        last_indexes = last_state
         total_schemas = len(schemas)
         logging.info(f'{total_schemas} schemas found matching the filter/pattern.')
         for i, s in enumerate(schemas):
             logging.info(f'Dowloading all tables from schema {s}')
             if i % 10 == 0:
                 logging.info(f'Processing {i}. schema out of {total_schemas}.')
-            table_cols, downloaded_tables_indexes = self.download_tables(s, params, last_state, cl)
-            last_indexes = {**last_indexes, **downloaded_tables_indexes}
-            res_tables = {**res_tables, **table_cols}
+            # table_cols, downloaded_tables_indexes = self.download_tables(s, params, last_state, cl)
+            # last_indexes = {**last_indexes, **downloaded_tables_indexes}
+            # res_tables = {**res_tables, **table_cols}
+
             # get table counts if validation
             if validation_mode:
-                table_cols = self.download_table_row_counts(s, params, downloaded_tables_indexes, cl)
+                table_cols = self.download_table_row_counts(s, params, last_state, cl)
                 res_tables = {**res_tables, **table_cols}
             if self.is_timed_out():
                 logging.warning(f'Max exection time of {self.max_runtime_sec}s has been reached. '
