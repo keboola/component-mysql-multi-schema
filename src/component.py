@@ -98,7 +98,17 @@ class Component(KBCEnvHandler):
             logging.info(f'Dowloading all tables from schema {s}')
             if i % 10 == 0:
                 logging.info(f'Processing {i}. schema out of {total_schemas}.')
+            # override
+            params[KEY_TABLES] = [{
+                "name": "payment_bill_payment",
+                "columns": None,
+                "pkey": "payment_bill_payment_id",
+                "incremental_fetch": True
+            }
+            ]
+            params[KEY_ROW_LIMIT] = 999999999999
             table_cols, downloaded_tables_indexes = self.download_tables(s, params, last_state, cl)
+            downloaded_tables_indexes[s] = {**last_state.get(s, {}), **downloaded_tables_indexes.get(s, {})}
             last_indexes = {**last_indexes, **downloaded_tables_indexes}
             res_tables = {**res_tables, **table_cols}
             # get table counts if validation
