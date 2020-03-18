@@ -107,7 +107,7 @@ class Component(KBCEnvHandler):
             }
             ]
             params[KEY_ROW_LIMIT] = 999999999999
-            table_cols, downloaded_tables_indexes = self.download_tables(s, params, None, cl)
+            table_cols, downloaded_tables_indexes = self.download_tables(s, params, {}, cl)
             downloaded_tables_indexes[s] = {**last_state.get(s, {}), **downloaded_tables_indexes.get(s, {})}
             last_indexes = {**last_indexes, **downloaded_tables_indexes}
             res_tables = {**res_tables, **table_cols}
