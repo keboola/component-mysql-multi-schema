@@ -2,17 +2,19 @@
 
 ## Configuration
     
-- **Connection parameters**
+**Connection parameters**
 
-    ```"#password": "mypass",
+```
+    "#password": "mypass",
     "user": "root",
     "host": "localhost",
     "port": 3308,
-  ```
-- **`schema_pattern`** - regex schema pattern, all schemas matching the pattern will be queried, ex "northwind*"
-- **`schema_list`** - explicit schema list, overrides `schema_pattern`
-- **`row_limit`** - optional limit of rows each run will retrieve - to limit db load, only used with incremental fetch set to true. 
-- **`tables`** - List of tables that will be downloaded from each schema - must have same structure.
+```
+
+- **schema_pattern** - regex schema pattern, all schemas matching the pattern will be queried, ex "northwind*"
+- **schema_list** - explicit schema list, overrides `schema_pattern`
+- **row_limit** - optional limit of rows each run will retrieve - to limit db load, only used with incremental fetch set to true. 
+- **tables** - List of tables that will be downloaded from each schema - must have same structure.
     - `name` - table name
     - `incremental_fetch` - true/false, if set to true the extractor will always continue from the last point defined 
 by the index column value. Default is `true` if omitted.
