@@ -100,7 +100,6 @@ class Client:
         sql = self.__build_select_query(columns, sort_key_col, sort_key_type, since_index, row_limit, schema,
                                         table_name)
         rows = []
-        col_names = []
         last_id = None
         try:
             if logging.DEBUG == logging.root.level:
@@ -111,6 +110,7 @@ class Client:
             while True:
                 rows = cur.fetchmany(MAX_CHUNK_SIZE)
                 if rows:
+                    col_names = []
                     if logging.DEBUG == logging.root.level:
                         logging.info(f'Fetched {len(rows)} rows from {schema}.{table_name}')
                     for i in cur.description:

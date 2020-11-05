@@ -190,19 +190,24 @@ class Component(KBCEnvHandler):
         :param client:
         :return:
         """
-
+        has_data = False
+        col_names = []
         for data, col_names, last_id in client.get_table_data_chunks(name, schema, columns=columns,
                                                                      row_limit=row_limit, since_index=last_index,
                                                                      sort_key_col=sort_key.get(KEY_SORT_KEY_COL),
                                                                      sort_key_type=sort_key.get(KEY_SORTKEY_TYPE)):
 
             if data:
-                # append schema col
-                col_names.append('schema_nm')
-                pkey.append('schema_nm')
+                has_data = True
+                col_names = col_names
                 self.store_table_data(data, name, schema)
-                downloaded_tables[name] = {'columns': col_names, 'pk': pkey}
-                downloaded_tables_indexes[schema] = {**downloaded_tables_indexes.get(schema, dict()), **{name: last_id}}
+
+        if has_data:
+            # append schema col
+            col_names.append('schema_nm')
+            pkey.append('schema_nm')
+            downloaded_tables[name] = {'columns': col_names, 'pk': pkey}
+            downloaded_tables_indexes[schema] = {**downloaded_tables_indexes.get(schema, dict()), **{name: last_id}}
 
         return downloaded_tables, downloaded_tables_indexes
 
