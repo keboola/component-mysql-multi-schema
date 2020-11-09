@@ -56,7 +56,7 @@ class Client:
         cur = self.db.cursor()
 
         start = time.perf_counter()
-        sql = self.__build_select_query(columns, sort_key_col, sort_key_type, since_index, row_limit, schema,
+        sql = self.__build_selecgitt_query(columns, sort_key_col, sort_key_type, since_index, row_limit, schema,
                                         table_name)
         rows = []
         col_names = []
