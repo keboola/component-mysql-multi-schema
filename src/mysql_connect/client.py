@@ -159,7 +159,8 @@ class Client:
               f"'{sort_key_col}' as sort_key_col  FROM {schema}.{table_name}"
         if sort_key_type == 'string':
             last_index = f"'{last_index}'"
-        sql += f' WHERE {sort_key_col} <= {last_index};'
+        if last_index and last_index != 'None':
+            sql += f' WHERE {sort_key_col} <= {last_index};'
 
         rows = []
         col_names = []

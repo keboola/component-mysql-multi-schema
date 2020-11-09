@@ -247,7 +247,7 @@ class Component(KBCEnvHandler):
         # downloaded_tables_indexes = dict()
         for t in params[KEY_TABLES]:
             name = t[KEY_NAME]
-            if name not in table_indexes[schema].keys():
+            if name not in table_indexes.get(schema, {}).keys():
                 continue
             last_index = table_indexes[schema][name]
             logging.debug(f"Downloading row count of table '{name}' from schema '{schema}''.")
