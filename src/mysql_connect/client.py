@@ -3,7 +3,7 @@ import pymysql
 import regex
 import time
 
-MAX_CHUNK_SIZE = 1000000
+MAX_CHUNK_SIZE = 500000
 
 READ_TIMEOUT = 1800
 
