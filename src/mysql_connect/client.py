@@ -1,7 +1,8 @@
 import logging
+import time
+
 import pymysql
 import regex
-import time
 
 MAX_CHUNK_SIZE = 500000
 
@@ -141,7 +142,7 @@ class Client:
 
         sql = f'SELECT {columns} FROM {schema}.{table_name}'
 
-        if sort_key_col and since_index:
+        if sort_key_col and since_index not in [None, 'None']:
             if sort_key_type == 'string':
                 since_index = f"'{since_index}'"
             sql += f' WHERE {sort_key_col} >= {since_index} ORDER BY {sort_key_col}'
