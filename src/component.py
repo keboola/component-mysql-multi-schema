@@ -120,8 +120,10 @@ class Component(KBCEnvHandler):
         self.write_state_file({'data': data_gzipped})
 
         # store manifest
+        default_bucket = f'in.c-kds-team-ex-mysql-multi-schema-{os.getenv("KBC_CONFIGID")}'
         for t in res_tables:
             self.configuration.write_table_manifest(os.path.join(self.tables_out_path, t),
+                                                    destination=f'{default_bucket}.{t}',
                                                     columns=res_tables[t]['columns'],
                                                     incremental=True, primary_key=res_tables[t]['pk'])
         self._close_res_stream()
