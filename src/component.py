@@ -3,15 +3,15 @@ Template Component main class.
 
 '''
 
-import gzip
-
 import base64
 import csv
+import gzip
 import json
 import logging
 import os
 import sys
 import time
+
 from kbc.env_handler import KBCEnvHandler
 
 from mysql_connect.client import Client
@@ -160,7 +160,7 @@ class Component(KBCEnvHandler):
             logging.debug(f"Downloading table '{name}' from schema '{schema}''.")
 
             buffered_cursor = False if not incremental_fetch or (
-                    incremental_fetch and int(row_limit) > 500000) else True
+                    incremental_fetch and (int(row_limit) > 500000 or int(row_limit) == 0)) else True
             if buffered_cursor:
                 downloaded_tables, downloaded_tables_indexes = self.get_table_data(name, schema, columns, pkey,
                                                                                    row_limit, last_index,
