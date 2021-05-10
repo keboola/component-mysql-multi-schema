@@ -18,6 +18,7 @@
     - `name` - table name
     - `incremental_fetch` - true/false, if set to true the extractor will always continue from the last point defined 
 by the index column value. Default is `true` if omitted.
+  - `incremental_loading` - true,false. Default is `true`. If false the output table will be overwritten with current result, otherwise upserted based on the primary key.
     - `columns` - array of column names, if empty all available columns downloaded
     - `pkey` - array or single name of the primary key column to support incremental fetching
     - `sort_key` - only used with incremental fetch, parameters of a column that should be used for incremental fetching => each new record has larger or equal value 

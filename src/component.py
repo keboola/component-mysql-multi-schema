@@ -17,6 +17,7 @@ from kbc.env_handler import KBCEnvHandler
 from mysql_connect.client import Client
 
 # configuration variables
+KEY_INCR_LOADING = 'incremental_loading'
 KEY_DEST_BUCKET = 'dest_bucket'
 KEY_ROW_LIMIT = 'row_limit'
 KEY_PKEY = 'pkey'
@@ -119,14 +120,21 @@ class Component(KBCEnvHandler):
 
         # store manifest
         default_bucket = f'in.c-kds-team-ex-mysql-multi-schema-{os.getenv("KBC_CONFIGID")}'
+
         if params.get(KEY_DEST_BUCKET):
             default_bucket = params.get(KEY_DEST_BUCKET)
         for t in res_tables:
             self.configuration.write_table_manifest(os.path.join(self.tables_out_path, t),
                                                     destination=f'{default_bucket}.{t}',
                                                     columns=res_tables[t]['columns'],
-                                                    incremental=True, primary_key=res_tables[t]['pk'])
+                                                    incremental=self._is_table_load_mode_incremental(t),
+                                                    primary_key=res_tables[t]['pk'])
         self._close_res_stream()
+
+    def _is_table_load_mode_incremental(self, table_name):
+        for t in self.cfg_params.get('tables', []):
+            if t['name'] == table_name:
+                return t.get(KEY_INCR_LOADING, True)
 
     def download_tables(self, schema, params, last_state, client):
         """
