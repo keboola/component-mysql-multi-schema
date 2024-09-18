@@ -162,7 +162,7 @@ class Component(KBCEnvHandler):
             logging.debug(f"Downloading table '{name}' from schema '{schema}''.")
 
             buffered_cursor = False if not incremental_fetch or (
-                    incremental_fetch and int(row_limit) > 500000) else True
+                    incremental_fetch and int(row_limit) > params.get(KEY_MAX_CHUNK_SIZE, 500000)) else True
             if buffered_cursor:
                 downloaded_tables, downloaded_tables_indexes = self.get_table_data(name, schema, columns, pkey,
                                                                                    row_limit, last_index,
