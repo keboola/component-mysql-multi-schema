@@ -98,18 +98,20 @@ class Client:
         cur = self.db.cursor(pymysql.cursors.SSCursor)
 
         start = time.perf_counter()
-        sql = self.__build_select_query(columns, sort_key_col, sort_key_type, since_index, row_limit, schema,
-                                        table_name)
-        rows = []
-        last_id = None
+
+        offset = 0
+
         try:
-            if logging.DEBUG == logging.root.level:
-                # wait before each message
-                # time.sleep(0.5)
-                logging.debug(f'Executing query: {sql}')
-            cur = self.__try_execute(cur, sql, buffered=False)
             while True:
-                rows = cur.fetchmany(self.max_chunk_size)
+                sql = self.__build_select_query(columns, sort_key_col, sort_key_type, since_index,
+                                                self.max_chunk_size, schema, table_name, offset)
+
+                if logging.DEBUG == logging.root.level:
+                    logging.debug(f'Executing query: {sql}')
+
+                cur = self.__try_execute(cur, sql, buffered=False)
+                rows = cur.fetchall() or None
+                offset += self.max_chunk_size
                 if rows:
                     col_names = []
                     if logging.DEBUG == logging.root.level:
@@ -135,7 +137,8 @@ class Client:
             self.db.close()
             raise ClientError(f'Failed to execute query {sql}!') from e
 
-    def __build_select_query(self, columns, sort_key_col, sort_key_type, since_index, row_limit, schema, table_name):
+    def __build_select_query(self, columns, sort_key_col, sort_key_type, since_index, row_limit, schema, table_name,
+                             offset):
         if columns and columns != []:
             columns = ','.join(columns)
         else:
@@ -152,6 +155,8 @@ class Client:
 
         if row_limit:
             sql += f' LIMIT {row_limit}'
+        if offset:
+            sql += f' OFFSET {offset}'
         return sql
 
     def get_table_row_count(self, table_name, schema, last_index, sort_key_col, sort_key_type):

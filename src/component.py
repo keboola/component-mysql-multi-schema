@@ -148,7 +148,7 @@ class Component(KBCEnvHandler):
             if not isinstance(pkey, list):
                 pkey = [pkey]
             if incremental_fetch:
-                row_limit = params.get(KEY_ROW_LIMIT)
+                row_limit = params.get(KEY_ROW_LIMIT, 0)
                 sort_key = t.get(KEY_SORT_KEY, {KEY_SORTKEY_TYPE: 'numeric', KEY_SORT_KEY_COL: ','.join(pkey)})
                 last_index = last_state.get(schema, {}).get(name)
 
@@ -161,8 +161,11 @@ class Component(KBCEnvHandler):
 
             logging.debug(f"Downloading table '{name}' from schema '{schema}''.")
 
-            buffered_cursor = False if not incremental_fetch or (
-                    incremental_fetch and int(row_limit) > params.get(KEY_MAX_CHUNK_SIZE, 500000)) else True
+            if not incremental_fetch or row_limit == 0 or row_limit > params.get(KEY_MAX_CHUNK_SIZE, 500000):
+                buffered_cursor = False
+            else:
+                buffered_cursor = True
+
             if buffered_cursor:
                 downloaded_tables, downloaded_tables_indexes = self.get_table_data(name, schema, columns, pkey,
                                                                                    row_limit, last_index,
