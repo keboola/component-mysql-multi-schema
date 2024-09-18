@@ -36,6 +36,7 @@ KEY_PORT = 'port'
 KEY_TABLES = 'tables'
 KEY_INCREMENTAL_FETCH = 'incremental_fetch'
 KEY_MAX_RUNTIME_SEC = 'max_runtime_sec'
+KEY_MAX_CHUNK_SIZE = 'max_chunk_size'
 
 KEY_VALIDATION_MODE = 'validation_mode'
 
@@ -80,7 +81,8 @@ class Component(KBCEnvHandler):
         '''
         params = self.cfg_params  # noqa
 
-        cl = Client(params[KEY_HOST], params[KEY_PORT], params[KEY_USER], params[KEY_PASSWORD])
+        cl = Client(params[KEY_HOST], params[KEY_PORT], params[KEY_USER], params[KEY_PASSWORD],
+                    params.get(KEY_MAX_CHUNK_SIZE))
         schema_pattern = params.get(KEY_SCHEMA_PATTERN)
         schema_list = params.get(KEY_SCHEMA_LIST)
         if not schema_list:

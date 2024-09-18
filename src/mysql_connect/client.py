@@ -4,7 +4,7 @@ import time
 import pymysql
 import regex
 
-MAX_CHUNK_SIZE = 500000
+DEFAULT_MAX_CHUNK_SIZE = 500000
 
 READ_TIMEOUT = 1800
 
@@ -21,7 +21,7 @@ class ClientError(Exception):
 
 class Client:
 
-    def __init__(self, host, port, user, password):
+    def __init__(self, host, port, user, password, max_chunk_size=DEFAULT_MAX_CHUNK_SIZE):
         """Creates a mysql client and initiates connection"""
         db_opts = {
             'user': user,
@@ -32,6 +32,7 @@ class Client:
         }
 
         self.db = pymysql.connect(**db_opts)
+        self.max_chunk_size = max_chunk_size
 
     def get_available_schemas(self):
         cur = self.__get_cursor()
@@ -108,7 +109,7 @@ class Client:
                 logging.debug(f'Executing query: {sql}')
             cur = self.__try_execute(cur, sql, buffered=False)
             while True:
-                rows = cur.fetchmany(MAX_CHUNK_SIZE)
+                rows = cur.fetchmany(self.max_chunk_size)
                 if rows:
                     col_names = []
                     if logging.DEBUG == logging.root.level:
